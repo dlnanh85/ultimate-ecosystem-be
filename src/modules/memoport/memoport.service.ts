@@ -5,10 +5,16 @@ import { Note, NoteDocument } from "./schemas/note.schema";
 import { CreateNoteDto } from "./dto/create-note.dto";
 import { UpdateNoteDto } from "./dto/update-note.dto";
 import { NoteResponseDto } from "./dto/note-response.dto";
+import { StorageService } from "../storage/storage.service";
+
+const IMAGE_TOKEN_PATTERN = /\[img\s+([^\]]+)\]/g;
 
 @Injectable()
 export class MemoportService {
-  constructor(@InjectModel(Note.name) private noteModel: Model<NoteDocument>) {}
+  constructor(
+    @InjectModel(Note.name) private noteModel: Model<NoteDocument>,
+    private readonly storageService: StorageService,
+  ) {}
 
   async findAll(): Promise<NoteResponseDto[]> {
     const notes = await this.noteModel.find().sort({ createdAt: -1 }).exec();
@@ -23,7 +29,16 @@ export class MemoportService {
     if (!note) {
       throw new NotFoundException(`Note with id ${id} not found`);
     }
-    return this.toResponseDto(note);
+
+    const keys = this.extractImageKeys(note.content);
+    const images = await Promise.all(
+      keys.map(async (key) => ({
+        key,
+        url: (await this.storageService.createDownloadUrl(key)).downloadUrl,
+      })),
+    );
+
+    return { ...this.toResponseDto(note), images };
   }
 
   async create(createNoteDto: CreateNoteDto): Promise<NoteResponseDto> {
@@ -55,6 +70,14 @@ export class MemoportService {
     if (!note) {
       throw new NotFoundException(`Note with id ${id} not found`);
     }
+  }
+
+  private extractImageKeys(content: string): string[] {
+    const keys = new Set<string>();
+    for (const match of content.matchAll(IMAGE_TOKEN_PATTERN)) {
+      keys.add(match[1].trim());
+    }
+    return [...keys];
   }
 
   private toResponseDto(note: NoteDocument): NoteResponseDto {

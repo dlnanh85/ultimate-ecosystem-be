@@ -40,7 +40,7 @@ export class StorageService {
 
   async createUploadUrl(contentType: string): Promise<UploadUrlResponseDto> {
     const extension = EXTENSION_BY_CONTENT_TYPE[contentType];
-    const key = `uploads/${randomUUID()}.${extension}`;
+    const key = `${randomUUID()}.${extension}`;
 
     const command = new PutObjectCommand({
       Bucket: this.bucket,
