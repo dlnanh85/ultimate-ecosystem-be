@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import { MongooseModule } from "@nestjs/mongoose";
 import env from "./config/env";
 import { MemoportModule } from "./modules/memoport/memoport.module";
+import { StorageModule } from "./modules/storage/storage.module";
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { MemoportModule } from "./modules/memoport/memoport.module";
       }),
     }),
     MemoportModule,
+    StorageModule,
   ],
   controllers: [AppController],
   providers: [AppService],
